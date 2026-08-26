@@ -285,6 +285,11 @@ export function createApp(config: ProxyConfig): Hono {
   //
   // main / title / compaction 三类请求识别不在路由层做,由 agent-adapters/dsh.ts
   // 的 classifyRequest 按 header + body 特征判(见其 doc)。
+  // ── pi coding agent (openai protocol, default adapter) ──
+  app.post("/pi/:spaceId/v1/chat/completions", (c) => handleChatCompletions(c, config));
+  app.post("/pi/:spaceId/chat/completions", (c) => handleChatCompletions(c, config));
+  app.post("/pi/:spaceId/v1/embeddings", (c) => handleAuxiliaryEndpoint(c, config));
+  app.post("/pi/:spaceId/v1/completions", (c) => handleAuxiliaryEndpoint(c, config));
   app.post("/dsh/:spaceId/v1/chat/completions", (c) => handleChatCompletions(c, config));
   app.post("/dsh/:spaceId/chat/completions", (c) => handleChatCompletions(c, config));
   // dsh 目前抓包未见 embeddings/moderations/completions,预留 aux 端点(与 CC/CB 对称)
