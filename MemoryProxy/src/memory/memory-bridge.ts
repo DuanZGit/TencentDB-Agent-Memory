@@ -59,6 +59,7 @@ interface SessionIdFields {
   session_id: string;
   task_id?: string;
   user_key?: string;
+  agent_source?: string;
   /**
    * Kernel tenant/instance ID for `x-tdai-service-id`. Extracted from
    * `SessionInfo.space_id`（原本来自请求路径 `/{agent}/{spaceId}/...`）。
@@ -106,6 +107,7 @@ function toIdFields(
     session_id: s.session_id,
     task_id: s.task_id,
     user_key: s.user_key,
+    agent_source: compositeKey.includes(":") ? compositeKey.split(":")[0] : compositeKey,
     space_id: s.space_id,
     composite_key: compositeKey,
   };
@@ -126,6 +128,7 @@ function bindingToIdFields(
     session_id: sessionId,
     task_id: binding.taskId,
     user_key: binding.userKey,
+    agent_source: agentSource,
     space_id: spaceId,
     composite_key: `${agentSource}:${sessionId}`,
   };

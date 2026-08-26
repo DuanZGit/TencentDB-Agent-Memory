@@ -913,6 +913,8 @@ export interface RequestLogEntry {
    * upstream did not return one. Used for cross-system tracing/audit.
    */
   upstreamRequestId?: string;
+  /** OpenTelemetry trace id captured by handlers to correlate request logs. */
+  traceId?: string;
 }
 
 /** usage event — written after LLM response is received. */
