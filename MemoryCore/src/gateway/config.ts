@@ -505,7 +505,7 @@ export function loadGatewayConfig(overrides?: Partial<GatewayConfig>): GatewayCo
       enabled: bool(topLevelEmbedding, "enabled") ?? memory.embedding.enabled,
       provider: str(topLevelEmbedding, "provider") ?? memory.embedding.provider,
       baseUrl: str(topLevelEmbedding, "baseUrl") ?? memory.embedding.baseUrl,
-      apiKey: str(topLevelEmbedding, "apiKey") ?? memory.embedding.apiKey,
+      apiKey: env("TDAI_EMBEDDING_API_KEY") ?? str(topLevelEmbedding, "apiKey") ?? memory.embedding.apiKey,
       model: str(topLevelEmbedding, "model") ?? memory.embedding.model,
       dimensions: num(topLevelEmbedding, "dimensions") ?? memory.embedding.dimensions,
       sendDimensions: bool(topLevelEmbedding, "sendDimensions") ?? memory.embedding.sendDimensions,

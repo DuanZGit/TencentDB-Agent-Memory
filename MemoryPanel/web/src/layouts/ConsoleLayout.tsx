@@ -22,6 +22,7 @@ const PATH_TO_PAGE: Record<string, PageId> = {
   '/wiki': 'wiki',
   '/code': 'code',
   '/skills': 'skills',
+  '/dispatch': 'dispatch',
   '/memory': 'chat_memory',
   '/team/members': 'team_members',
   '/team/agents': 'team_agents',
@@ -40,6 +41,7 @@ function legacyHashToPath(): string | null {
   if (leaf === 'wiki') return '/wiki';
   if (leaf === 'code') return '/code';
   if (leaf === 'skills' || leaf === 'skill') return '/skills';
+  if (leaf === 'dispatch') return '/dispatch';
   if (leaf === 'chat_memory' || leaf === 'memory' || leaf === 'chat-memory') return '/memory';
   if (leaf === 'agents' || leaf === 'team_agents') return '/team/agents';
   if (leaf === 'team' || leaf === 'members' || leaf === 'team_members') return '/team/members';

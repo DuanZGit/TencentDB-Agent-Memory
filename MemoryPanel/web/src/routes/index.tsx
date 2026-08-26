@@ -10,6 +10,7 @@ import { WorkbenchPage } from '@/pages/workbench/WorkbenchPage';
 import { WikiPage } from '@/pages/wiki/WikiPage';
 import { CodePage } from '@/pages/code/CodePage';
 import { SkillsPage } from '@/pages/skills/SkillsPage';
+import { DispatchPage } from '@/pages/dispatch/DispatchPage';
 import { ChatMemoryPage } from '@/pages/memory/ChatMemoryPage';
 import { MembersPage } from '@/pages/team/MembersPage';
 import { AgentsPage } from '@/pages/team/AgentsPage';
@@ -24,6 +25,7 @@ export const routes: RouteObject[] = [
       { path: 'wiki', element: <WikiPage /> },
       { path: 'code', element: <CodePage /> },
       { path: 'skills', element: <SkillsPage /> },
+      { path: 'dispatch', element: <DispatchPage /> },
       { path: 'memory', element: <ChatMemoryPage /> },
       { path: 'team/members', element: <MembersPage /> },
       { path: 'team/agents', element: <AgentsPage /> },
