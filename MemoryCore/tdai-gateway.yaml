@@ -10,7 +10,7 @@ data:
 
 llm:
   baseUrl: https://api.stepfun.com/v1
-  apiKey:""  # 实际 key 走环境变量（见 hub.env）
+  apiKey: ""  # 实际 key 走环境变量（见 hub.env）
   model: Qwen/Qwen3-30B-A3B-Instruct-2507
   maxTokens: 32000
   timeoutMs: 300000
