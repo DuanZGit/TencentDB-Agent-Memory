@@ -138,3 +138,4 @@ z_config/
 
 /hub.env
 /data/
+/pi-proxy.env
