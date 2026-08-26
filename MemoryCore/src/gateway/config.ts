@@ -525,6 +525,14 @@ export function loadGatewayConfig(overrides?: Partial<GatewayConfig>): GatewayCo
     };
   }
 
+  // ── Standalone env override (applies even without a top-level embedding block) ──
+  // TDAI_EMBEDDING_API_KEY always wins over yaml so secrets stay out of config files.
+  const envEmbedKey = env("TDAI_EMBEDDING_API_KEY");
+  if (envEmbedKey) {
+    memory.embedding.apiKey = envEmbedKey;
+    if (!memory.embedding.enabled) memory.embedding.enabled = true;
+  }
+
   // ── Skill module config ──
   // Resolution order:
   //   1. Top-level `skill` block in yaml (preferred — skill is a top-level
