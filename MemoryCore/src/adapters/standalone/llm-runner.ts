@@ -52,6 +52,20 @@ const MAX_TOOL_ITERATIONS = 20;
  *
  * 未传对应字段时，metadata 里也不出现该键 —— 保持与旧行为完全一致。
  */
+
+/**
+ * Strip reasoning blocks that some OpenAI-compatible backends inline into
+ * message.content (e.g. MiniMax M3 emits "<think>...</think>" in content).
+ * Also drops an unterminated trailing "<think>" (stream cut-off safety).
+ */
+const THINK_BLOCK_RE = /<think>[\s\S]*?<\/think>\s*/g;
+export function stripThinkBlocks(text: string): string {
+  let out = text.replace(THINK_BLOCK_RE, "");
+  const openIdx = out.indexOf("<think>");
+  if (openIdx !== -1) out = out.slice(0, openIdx);
+  return out.trim();
+}
+
 function buildTelemetryMetadata(params: LLMRunParams): Record<string, unknown> {
   const meta: Record<string, unknown> = {
     instanceId: params.instanceId ?? "unknown",
@@ -436,7 +450,7 @@ export class StandaloneLLMRunner implements LLMRunner {
         });
       }
 
-      return text;
+      return stripThinkBlocks(text);
     } catch (err) {
       const totalMs = Date.now() - runStartMs;
       const errMsg = err instanceof Error ? err.message : String(err);
