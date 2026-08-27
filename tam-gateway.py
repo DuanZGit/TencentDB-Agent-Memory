@@ -52,8 +52,16 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
+        # CORS: 允许任意浏览器跨域（网关仅暴露白名单路由 + X-Tam-Key 鉴权，安全可控）
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "X-Tam-Key, Content-Type")
+        self.send_header("Access-Control-Max-Age", "86400")
         self.end_headers()
         self.wfile.write(body)
+
+    def do_OPTIONS(self):
+        self._send(204, b"")
 
     def do_GET(self):
         if self.path == "/health":
