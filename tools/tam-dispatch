@@ -1,0 +1,86 @@
+#!/bin/bash
+# tam-dispatch — Minis 调用 TAM agent gateway 的统一入口（任务队列 + 记忆）
+# 用法:
+#   tam-dispatch send <to> <type> <payload...>   派任务
+#   tam-dispatch inbox [agent] [status]          看收件箱 (默认 minis/queued)
+#   tam-dispatch claim [agent]                   认领任务
+#   tam-dispatch done <task_id> <result...>      回写结果
+#   tam-dispatch fail <task_id> <reason...>      回写失败
+#   tam-dispatch stats                           队列统计
+#   tam-dispatch recall <query> [limit]          记忆召回
+#   tam-dispatch save <content...>               记忆沉淀
+# 配置: env TAM_URL(默认 https://tam.duanz.xin:1218) / TAM_KEY / TAM_AGENT_ID(默认 minis)
+
+URL="${TAM_URL:-https://tam.duanz.xin:1218}"
+KEY="${TAM_KEY:-}"
+# AGENT 在每次调用时动态解析，允许命令行 export TAM_AGENT_ID 覆盖
+AGENT() { echo "${TAM_AGENT_ID:-minis}"; }
+
+req() {
+  local method=$1 path=$2 body=${3:-}
+  if [ -n "$body" ]; then
+    curl -sk -m 60 -X "$method" "$URL$path" -H "X-Tam-Key: $KEY" -H "Content-Type: application/json" -d "$body"
+  else
+    curl -sk -m 60 -X "$method" "$URL$path" -H "X-Tam-Key: $KEY"
+  fi
+}
+
+CMD="$1"; shift || true
+case "$CMD" in
+  send)
+    TO="$1"; TYPE="$2"; shift 2
+    PAYLOAD=$(python3 -c "import json,sys; print(json.dumps(sys.argv[1]))" "$*")
+    req POST /api/v1/dispatch/send "{\"from\":\"$(AGENT)\",\"to\":\"$TO\",\"type\":\"$TYPE\",\"payload\":$PAYLOAD}" \
+      | python3 -c "import json,sys; d=json.load(sys.stdin); print('sent:', d['data']['id'], '->', d['data'].get('to_agent','')) if d['code']==0 else print(d)"
+    ;;
+  inbox)
+    TO="${1:-$(AGENT)}"; ST="${2:-queued}"
+    req GET "/api/v1/dispatch/list?to=$TO&status=$ST&limit=20" \
+      | python3 -c "
+import json,sys
+d=json.load(sys.stdin)['data']
+items=d.get('tasks',[])
+if not items: print('(空)')
+for t in items:
+    print(f\"[{t['id']}] {t['type']} from={t['from_agent']} | {str(t['payload'])[:120]} ({t['created_at'][:16]})\")"
+    ;;
+  claim)
+    TO="${1:-$(AGENT)}"
+    req POST /api/v1/dispatch/claim "{\"to\":\"$TO\"}" \
+      | python3 -c "
+import json,sys
+d=json.load(sys.stdin)['data']
+t=d.get('task')
+print(f\"claimed {t['id']}\\n类型: {t['type']}\\n来源: {t['from_agent']}\\n内容: {t['payload']}\") if t else print('(无可认领任务)')"
+    ;;
+  done|fail)
+    ID="$1"; shift
+    ST="done"; [ "$CMD" = "fail" ] && ST="failed"
+    RESULT=$(python3 -c "import json,sys; print(json.dumps(sys.argv[1]))" "$*")
+    req POST /api/v1/dispatch/update "{\"id\":\"$ID\",\"status\":\"$ST\",\"result\":$RESULT,\"to\":\"$(AGENT)\"}" \
+      | python3 -c "import json,sys; d=json.load(sys.stdin); print('updated:', d['message'])"
+    ;;
+  stats)
+    req GET /api/v1/dispatch/stats | python3 -m json.tool --no-ensure-ascii 2>/dev/null || req GET /api/v1/dispatch/stats
+    ;;
+  recall)
+    Q="$1"; LIMIT="${2:-5}"
+    QJ=$(python3 -c "import json,sys; print(json.dumps(sys.argv[1]))" "$Q")
+    req POST /v3/conversation/search "{\"query\":$QJ,\"limit\":$LIMIT}" \
+      | python3 -c "
+import json,sys
+ms=json.load(sys.stdin)['data']['messages']
+if not ms: print('(无命中)')
+for m in ms:
+    print(f\"[{m['score']:.2f}] {(m['timestamp'] or '')[:16]} | \" + str(m['content'])[:300].replace(chr(10),' / '))"
+    ;;
+  save)
+    SID="${TAM_SESSION:-minis}"
+    CJ=$(python3 -c "import json,sys; print(json.dumps(sys.argv[1]))" "$*")
+    req POST /v3/conversation/add "{\"session_id\":\"$SID\",\"messages\":[{\"role\":\"user\",\"content\":$CJ}]}" \
+      | python3 -c "import json,sys; d=json.load(sys.stdin); print('saved to', '$SID') if d['code']==0 else print(d)"
+    ;;
+  *)
+    grep '^#' "$0" | sed 's/^# \{0,1\}//'
+    ;;
+esac
