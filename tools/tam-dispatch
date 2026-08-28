@@ -11,6 +11,9 @@
 #   tam-dispatch save <content...>               记忆沉淀
 # 配置: env TAM_URL(默认 https://tam.duanz.xin:1218) / TAM_KEY / TAM_AGENT_ID(默认 minis)
 
+if [ -z "$TAM_KEY" ] && [ -f /opt/tencent-mem/tools/tam-dispatch.env ]; then
+  set -a; . /opt/tencent-mem/tools/tam-dispatch.env; set +a
+fi
 URL="${TAM_URL:-https://tam.duanz.xin:1218}"
 KEY="${TAM_KEY:-}"
 # AGENT 在每次调用时动态解析，允许命令行 export TAM_AGENT_ID 覆盖
