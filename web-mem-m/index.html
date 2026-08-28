@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0d12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TAM">
+<title>TAM · 记忆中枢</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- 首屏星座画布（纯装饰，降级为 CSS 光晕） -->
+<div class="hero" id="hero">
+  <canvas id="constellation"></canvas>
+  <div class="hero-fallback"></div>
+  <div class="hero-inner">
+    <div class="hero-eyebrow">AGENT MEMORY</div>
+    <div class="hero-title">记忆中枢</div>
+    <div class="hero-stats" id="heroStats"></div>
+  </div>
+</div>
+
+<!-- 顶栏（滚动后出现） -->
+<header class="topbar" id="topbar">
+  <div class="brand"><span class="brand-dot" id="connDot"></span>TAM</div>
+  <div class="crumb" id="crumb">未连接</div>
+  <button class="icon-btn" id="refreshBtn" aria-label="刷新">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg>
+  </button>
+</header>
+
+<main class="page" id="page">
+  <nav class="tabview" id="tab-overview">
+    <div class="sec-head">Agent 记忆块</div>
+    <div id="agentCards"><div class="skel"><i></i><i></i><i></i></div></div>
+  </nav>
+
+  <nav class="tabview" id="tab-memory" hidden>
+    <div class="sec-head">记忆检索</div>
+    <div class="gsearch" id="gsearchWrap" hidden>
+      <div class="field-row">
+        <input id="gQuery" placeholder="跨会话语义检索（网关）" autocomplete="off">
+        <button class="chip-btn" id="gGo">检索</button>
+      </div>
+    </div>
+    <div id="blockList"></div>
+    <div id="gResults"></div>
+  </nav>
+
+  <nav class="tabview" id="tab-task" hidden>
+    <div class="seg" id="taskSeg">
+      <button class="seg-btn active" data-k="team">团队任务</button>
+      <button class="seg-btn" data-k="inbox">收件箱</button>
+      <button class="seg-btn" data-k="sent">已派</button>
+    </div>
+    <div id="taskList"></div>
+  </nav>
+
+  <nav class="tabview" id="tab-set" hidden>
+    <div class="sec-head">连接</div>
+    <div class="card form">
+      <label>用户密钥（x-tdai-user-key）
+        <input id="fKey" type="password" placeholder="sk-mem-...">
+      </label>
+      <label>实例 ID
+        <input id="fSid" placeholder="default">
+      </label>
+      <label>团队
+        <select id="fTeam"><option value="">先验证密钥后加载</option></select>
+      </label>
+      <div class="hint">面板 API 与页面同源，无需填地址。</div>
+    </div>
+    <div class="sec-head">网关（可选，语义检索与派送）</div>
+    <div class="card form">
+      <label>网关地址
+        <input id="fGurl" placeholder="https://tam.duanz.xin:1218">
+      </label>
+      <label>网关密钥（X-Tam-Key）
+        <input id="fGkey" type="password" placeholder="sk-mem-... 或网关 token">
+      </label>
+      <label>Agent 身份
+        <select id="fAgent">
+          <option value="minis">minis</option>
+          <option value="pi">pi</option>
+          <option value="dsh">dsh</option>
+        </select>
+      </label>
+    </div>
+    <button class="btn" id="saveBtn">保存</button>
+    <button class="btn ghost" id="clearBtn">清除全部配置</button>
+    <div class="ver">v2.0 · mem.duanz.xin/m · TencentDB Agent Memory</div>
+  </nav>
+</main>
+
+<!-- 记忆块详情（全屏弹层） -->
+<div class="sheet" id="detailSheet">
+  <div class="sheet-head">
+    <button class="icon-btn" id="detailBack" aria-label="返回">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <div class="sheet-title" id="detailTitle">记忆</div>
+  </div>
+  <div class="layer-pills" id="layerPills">
+    <button class="pill active" data-l="L0">L0 对话</button>
+    <button class="pill" data-l="L1">L1 要点</button>
+    <button class="pill" data-l="L2">L2 场景</button>
+    <button class="pill" data-l="L3">L3 核心</button>
+  </div>
+  <div class="field-row pad">
+    <input id="lQuery" placeholder="块内检索（L0/L1）" autocomplete="off">
+    <button class="chip-btn" id="lGo">搜索</button>
+  </div>
+  <div class="sheet-body" id="detailBody"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 底部导航 -->
+<nav class="bottom-nav" id="bottomNav">
+  <button class="nav-item active" data-tab="overview">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4M4.9 4.9l2.8 2.8m8.6 8.6 2.8 2.8m0-14.2-2.8 2.8M7.7 16.3l-2.8 2.8"/></svg>
+    <span>概览</span>
+  </button>
+  <button class="nav-item" data-tab="memory">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 0-4 4 4 4 0 0 0-3 6.6A4 4 0 0 0 8 21h8a4 4 0 0 0 3-7.4A4 4 0 0 0 16 7a4 4 0 0 0-4-4Z"/><path d="M12 3v18"/></svg>
+    <span>记忆</span>
+  </button>
+  <button class="nav-item" data-tab="task">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4m8-4v4M3 11h18m-11 4 2 2 4-4"/></svg>
+    <span>任务</span>
+  </button>
+  <button class="nav-item" data-tab="set">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.9 2.9l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.9-2.9l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.9-2.9l.1.1a1.7 1.7 0 0 0 1.9.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5h.1a1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.9 2.9l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1Z"/></svg>
+    <span>设置</span>
+  </button>
+</nav>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
